@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional
+import os
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -7,10 +8,10 @@ from sqlalchemy.orm import Session
 from . import crud, schemas
 from .database import get_db
 
-# Secret key for JWT - CHANGE THIS IN PRODUCTION
-SECRET_KEY = "your-secret-key-change-this-in-production"
+# Secret key for JWT - set this in production environment
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "your-secret-key-change-this-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
