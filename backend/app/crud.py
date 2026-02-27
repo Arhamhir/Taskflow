@@ -4,6 +4,12 @@ from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
+def _normalize_bcrypt_password(password: str) -> str:
+    password_bytes = password.encode("utf-8")
+    safe_bytes = password_bytes[:72]
+    return safe_bytes.decode("utf-8", errors="ignore")
+
 # User CRUD
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
@@ -12,8 +18,8 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.User).offset(skip).limit(limit).all()
 
 def create_user(db: Session, user: schemas.UserCreate):
-    # Bcrypt has a 72-byte limit, so truncate password if needed
-    password_to_hash = user.password[:72]
+    # Bcrypt has a strict 72-byte input limit (bytes, not characters)
+    password_to_hash = _normalize_bcrypt_password(user.password)
     hashed_password = pwd_context.hash(password_to_hash)
     db_user = models.User(
         name=user.name,
@@ -27,7 +33,8 @@ def create_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    password_to_verify = _normalize_bcrypt_password(plain_password)
+    return pwd_context.verify(password_to_verify, hashed_password)
 
 # Project CRUD
 def get_projects(db: Session, skip: int = 0, limit: int = 100):
